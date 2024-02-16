@@ -18,6 +18,8 @@ import {
 import logo from "./logo.svg";
 import "./App.css";
 import { Button, Form } from "react-bootstrap";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Default styles that can be overridden by your app
 require("@demox-labs/aleo-wallet-adapter-reactui/styles.css");
@@ -54,20 +56,44 @@ export const App = () => {
 };
 
 const WalletToolBox = () => {
-  const { wallet, connected } = useWallet();
+  const [programId, setProgramId] = useState<string>("");
+  const [hyperlink, setHyperlink] = useState<string | null>(null);
 
-  // Now you can use the `wallet` object here
+  const handleGenerateHyperlink = () => {
+    if (programId && programId.endsWith(".aleo")) {
+      const explorerLink = `https://explorer.hamp.app/program?id=${programId}`;
+      setHyperlink(explorerLink);
+    } else {
+      // Display an error toast message
+      toast.error("Invalid program ID. Please enter a valid program ID ending with '.aleo'.");
+      setHyperlink(null);
+    }
+  };
 
   return (
-    <div> 
-      {connected ? (
-        <div className="mt-2 flex-column rounded border-2 p-4 bg-light shadow">
-          <TransferCredit />
+    <div className="mt-2 flex-column rounded border-2 p-4 bg-light shadow">
+      <Form.Group>
+        <Form.Label>Program ID:</Form.Label>
+        <Form.Control
+          type="text"
+          placeholder="Enter program ID (e.g., program_name.aleo)"
+          onChange={(e) => setProgramId(e.target.value)}
+        />
+      </Form.Group>
+      <Button onClick={handleGenerateHyperlink}>Generate Hyperlink</Button>
+
+      {hyperlink && (
+        <div className="mt-2">
+          <p>Generated Hyperlink:</p>
+          <a href={hyperlink} target="_blank" rel="noopener noreferrer">
+            🔗
+          </a>
+          &nbsp;
+          {programId}
         </div>
-      ) : (
-        <div></div>
       )}
-      {/* Your component code here */}
+
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
     </div>
   );
 };
@@ -75,7 +101,6 @@ const WalletToolBox = () => {
 const TransferCredit = () => {
   const { requestTransaction, publicKey } = useWallet();
   const [amount, setAmount] = useState<number>(0);
-  const [fee, setFee] = useState<number>(0);
   const [toAddr, setToAddr] = useState<string>("");
 
   const handleTransfer = async () => {
@@ -92,7 +117,7 @@ const TransferCredit = () => {
       publicKey!,
       WalletAdapterNetwork.Testnet,
       [transfer_public_transition],
-      fee,
+      100000,
       false,
     )
 
@@ -121,16 +146,8 @@ const TransferCredit = () => {
         <Form.Label>Amount:</Form.Label>
         <Form.Control
           type="number"
-          placeholder="1,000,000 = 1 Aleo"
+          placeholder="Enter amount"
           onChange={(e) => setAmount(Number(e.target.value))}
-        />
-      </Form.Group>
-      <Form.Group>
-        <Form.Label>Fee:</Form.Label>
-        <Form.Control
-          type="number"
-          placeholder="1,000,000 = 1 Aleo"
-          onChange={(e) => setFee(Number(e.target.value))}
         />
       </Form.Group>
       <Button onClick={handleTransfer}>Transfer Aleo Credits</Button>
